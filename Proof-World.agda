@@ -35,50 +35,47 @@ trans {A} {w} {invk c t0} {invk .c t1} {invk .c t2} (rinvk .t0 .t1 h0) (rinvk .t
 -- TODO: use another equality. ≗  that is easy to understand.
 import Eq
 
-p : {w : world} {A : Set} (prog : w ⇒ A) → (lift (id w) prog) ≐ prog
-p (ret a) = rret a
-p {w} {A} (invk c t) =
-  let
-    open Eq {_} {w ⇒ A} _≐_ refl sym trans
-  in
-    ∵ (lift (id w) (invk c t)) ≈ id w c >>= (λ x → lift (id w) (t x)) by refl
-                                ≈ id w c >>= (λ x → lift (λ x' → invk x' ret) (t x)) by refl
-                                ≈ id w c >>= t                 by p (invk c t)
-                                ≈ invk c ret >>= t             by rinvk t t (λ x → refl)
-                                ≈ invk c (λ x → ret x >>= t) by rinvk t t (λ x → refl)
-                                ≈ invk c (λ x → t x)         by rinvk t t (λ x → refl)
-                                ≈ invk c t                     by rinvk t t (λ x → refl)
-  {-where
-    lemma2 : (id w c >>= (λ x → lift (id w) (t x))) ≐ (id w c >>= t)
-    lemma2 =
-      let
-        open Eq {_} {w ⇒ _} _≐_ refl sym trans
-      in
-        ∵ (id w c >>= (λ x → lift (id w) (t x))) ≈ {!!} by {!!}
-   -}
-
 lemma3-1 : {w1 w2 : world} {c : / w2 /} {m : w1 ⊸ w2} → (id w1 ⁏ m) c ≐ (m c)
-lemma3-1 {w1} {w2} {c} {m} = p (m c)
-
+lemma3-1 {w1} {w2} {c} {m} = lemma (m c)
+  where
+    lemma : {w : world} {A : Set} (prog : w ⇒ A) → (lift (id w) prog) ≐ prog
+    lemma {w} {A} (ret a) = rret a
+    lemma {w} {A} (invk c t) =
+      let
+        open Eq {_} {w ⇒ A} _≐_ refl sym trans
+      in
+        ∵ (lift (id w) (invk c t))
+                ≈ id w c >>= (λ x → lift (id w) (t x)) by refl
+                ≈ id w c >>= (λ x → lift (λ x' → invk x' ret) (t x)) by refl
+                ≈ id w c >>= t                 by {!!}
+                ≈ invk c ret >>= t             by rinvk t t (λ x → refl)
+                ≈ invk c (λ x → ret x >>= t) by rinvk t t (λ x → refl)
+                ≈ invk c (λ x → t x)         by rinvk t t (λ x → refl)
+                ≈ invk c t                     by rinvk t t (λ x → refl)
+  
 lemma3-2 : {w1 w2 : world} {A : Set} {n : w1 ⊸ w2} {c : / w2 /}
                                                           → (n ⁏ id w2) c ≐ n c
 lemma3-2 {w1} {w2} {A} {n} {c} = 
   let
     open Eq {_} {w1 ⇒ (w2 at c)} _≐_ refl sym trans
-    
-    lemma : {c : / w2 /} → (n ⁏ (id w2)) c ≐ lift n ((id w2) c)
-    lemma = refl
-
-    lemma2 : (n c >>= ret) ≐ n c
-    lemma2 = {!!}
   in
     ∵ ((n ⁏ (id w2)) c) ≈ lift n (id w2 c)                 by lemma
                          ≈ lift n (invk c ret)              by refl
                          ≈ n c >>= (λ x → lift n (ret x)) by refl
                          ≈ n c >>= ret                      by refl
-                         ≈ n c                              by lemma2
+                         ≈ n c                              by lemma2 (n c)
+  where
+    lemma : {c : / w2 /} → (n ⁏ (id w2)) c ≐ lift n ((id w2) c)
+    lemma = refl
+
+    lemma2 : {w : world} {A : Set} (prog : w ⇒ A) → (prog >>= ret) ≐ prog
+    lemma2 (ret a) = rret a
+    lemma2 (invk c t) = rinvk {!!} t (λ x → lemma2 (t x))
+  
     
-{- proof by hand. (I think this paper said about as follows)
+{-
+-- proof by hand. (I think this paper said about as follows)
+
 lift (id w1) (ret a) = ret a
 lift (id w1) (invk c t) = (id w1) c >>= (λ x → lift (id w1) (t x))
                         = (id w1) c >>= t

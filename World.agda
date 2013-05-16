@@ -42,7 +42,7 @@ _>>=_ : {A B : Set} {w : world} → (w ⇒ A) → (A → (w ⇒ B)) → (w ⇒ B
 -- Definition of world map
 _⊸_ : world → world → Set     -- multimap = ⊸
 w1 ⊸ w2 = (x : / w2 /) → w1 ⇒ (w2 at x)
--- comment: bindとinvokeは１つにするような定義も可能では？
+-- TODO: Could we combine "bind" and "invoke" ?
 
 -- (m : w1 ⊸ w2)
 -- (m c) , where c : / w2 / is an interactive program over the world w1
