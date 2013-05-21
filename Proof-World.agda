@@ -46,7 +46,7 @@ lemma3-1 {w1} {w2} {c} {m} = lemma (m c)
       in
         ∵ (lift (id w) (invk c t))
                 ≈ id w c >>= (λ x → lift (id w) (t x)) by refl
-                ≈ id w c >>= (λ x → t x)     by {!!} -- can I use induction hypothesis?
+                ≈ id w c >>= (λ x → t x)     by {!!} -- can I use induction hypothesis? (lemma (t x))
                 ≈ id w c >>= t                 by rinvk t t (λ x → refl)
                 ≈ invk c ret >>= t             by rinvk t t (λ x → refl)
                 ≈ invk c (λ x → ret x >>= t) by rinvk t t (λ x → refl)
@@ -133,11 +133,12 @@ lemma4 {w1} {w2} {w3} {w4} {f} {g} {h} {c} {A} =
           let
             open Eq {_} {w1 ⇒ _} _≐_ refl sym trans
           in
-            ∵ ((lift f (invk u v) >>= (λ x → lift (f ⁏ g) (d x))))
-              ≈ (f u >>= (λ y → lift f (v y))) >>= (λ z → lift (f ⁏ g) (d z)) by refl
-              ≈  f u >>= (λ y → lift f (v y) >>= (λ z → lift (f ⁏ g) (d z)))
+            ∵ ((lift f (invk u v) >>= (λ x → lift (f ⁏ g) (d x)))) 
+              ≈ (f u >>= (λ y → lift f (v y))) >>= (λ z → lift (f ⁏ g) (d z)) by refl  -- <- L in the paper
+              ≈  f u >>= (λ y → lift f (v y) >>= (λ z → lift (f ⁏ g) (d z)))           -- <- M in the paper
                 by monad-law-of-associativity (f u) (λ y → lift f (v y)) (λ z → lift (f ⁏ g) (d z))
-              ≈ f u >>= (λ y → lift f (v y >>= (λ z → lift g (d z)))) by {!!}
+              ≈ f u >>= (λ y → lift f (v y >>= (λ z → lift g (d z)))) by prop {!!}     -- <- R in the paper
+                  -- I want to write like 'prop (v y)' but y is not defined in this area.
               ≈ lift f (invk u v >>= (λ x → lift g (d x))) by refl
           where
             monad-law-of-associativity : {w : world} {A B C : Set}
@@ -146,7 +147,6 @@ lemma4 {w1} {w2} {w3} {w4} {f} {g} {h} {c} {A} =
               → (β : B → (w ⇒ C))
               → ((n >>= α) >>= β) ≐ (n >>= (λ y → α y >>= β))
             monad-law-of-associativity = {!!}
-
 
 -- Theorem 5: There exists a category W m of worlds and world maps.
 -- (Proof: by the Lemma 3 and 4.)
