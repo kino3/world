@@ -27,7 +27,7 @@ _at_ : (w : world) → world.C w → Set
 
 -- Definition of interactive program
 data _⇒_ (w : world) (A : Set) : Set where -- 
-  ret  : (a : A) → (w ⇒ A)
+  ret  : A → (w ⇒ A)
   invk : (c : / w /) → ((w at c) → (w ⇒ A)) → (w ⇒ A)
 
 -- The bind operation

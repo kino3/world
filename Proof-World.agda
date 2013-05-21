@@ -46,8 +46,8 @@ lemma3-1 {w1} {w2} {c} {m} = lemma (m c)
       in
         ∵ (lift (id w) (invk c t))
                 ≈ id w c >>= (λ x → lift (id w) (t x)) by refl
-                ≈ id w c >>= (λ x → lift (λ x' → invk x' ret) (t x)) by refl
-                ≈ id w c >>= t                 by {!!}
+                ≈ id w c >>= (λ x → t x)     by {!!} -- can I use induction hypothesis?
+                ≈ id w c >>= t                 by rinvk t t (λ x → refl)
                 ≈ invk c ret >>= t             by rinvk t t (λ x → refl)
                 ≈ invk c (λ x → ret x >>= t) by rinvk t t (λ x → refl)
                 ≈ invk c (λ x → t x)         by rinvk t t (λ x → refl)
@@ -59,19 +59,15 @@ lemma3-2 {w1} {w2} {A} {n} {c} =
   let
     open Eq {_} {w1 ⇒ (w2 at c)} _≐_ refl sym trans
   in
-    ∵ ((n ⁏ (id w2)) c) ≈ lift n (id w2 c)                 by lemma
+    ∵ ((n ⁏ (id w2)) c) ≈ lift n (id w2 c)                 by refl
                          ≈ lift n (invk c ret)              by refl
                          ≈ n c >>= (λ x → lift n (ret x)) by refl
                          ≈ n c >>= ret                      by refl
-                         ≈ n c                              by lemma2 (n c)
+                         ≈ n c                              by lemma (n c)
   where
-    lemma : {c : / w2 /} → (n ⁏ (id w2)) c ≐ lift n ((id w2) c)
-    lemma = refl
-
-    lemma2 : {w : world} {A : Set} (prog : w ⇒ A) → (prog >>= ret) ≐ prog
-    lemma2 (ret a) = rret a
-    lemma2 (invk c t) = rinvk {!!} t (λ x → lemma2 (t x))
-  
+    lemma : {w : world} {A : Set} (prog : w ⇒ A) → (prog >>= ret) ≐ prog
+    lemma (ret a) = rret a
+    lemma (invk c t) = rinvk {!!} t (λ x → lemma (t x)) -- cannot solve
     
 {-
 -- proof by hand. (I think this paper said about as follows)
@@ -150,11 +146,6 @@ lemma4 {w1} {w2} {w3} {w4} {f} {g} {h} {c} {A} =
               → (β : B → (w ⇒ C))
               → ((n >>= α) >>= β) ≐ (n >>= (λ y → α y >>= β))
             monad-law-of-associativity = {!!}
-
-            induction-hypothesis : (m : w2 ⇒ (w3 at c)) →
-                                 (lift f m >>= λ x → lift (f ⁏ g) (d x))
-                                ≐ lift f (m >>= λ x → lift g (d x))
-            induction-hypothesis m = prop m
 
 
 -- Theorem 5: There exists a category W m of worlds and world maps.
