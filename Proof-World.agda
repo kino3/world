@@ -38,6 +38,15 @@ import Eq
 lemma3-1 : {w1 w2 : world} {c : / w2 /} {m : w1 ⊸ w2} → (id w1 ⁏ m) c ≐ (m c)
 lemma3-1 {w1} {w2} {c} {m} = lemma (m c)
   where
+    -- congruence binding-op のあとに出す
+    lemma0 : {w : world} {A B : Set} {f g : A → w ⇒ B}
+      → {p q : w ⇒ A} → p ≐ q → ((a0 : A) → f a0 ≐ g a0)
+      → (p >>= f) ≐ (q >>= g)
+    lemma0 {w} {A} {B} {f} {g} {ret a} {ret .a} (rret .a) f≐g = f≐g a
+    lemma0 {w} {A} {B} {f} {g} {invk c s} {invk .c t} (rinvk {.c} .s .t s≐t) f≐g = rinvk (λ x → s x >>= f) (λ x → t x >>= g) (λ x → lemma0 {w} {A} {B} {f} {g} {s x} {t x} (s≐t x) f≐g)
+    lemma0 {w} {A} {B} {f} {g} {ret _} {invk _ _} () _
+    lemma0 {w} {A} {B} {f} {g} {invk _ _} {ret _} () _
+  
     lemma : {w : world} {A : Set} (prog : w ⇒ A) → (lift (id w) prog) ≐ prog
     lemma {w} {A} (ret a) = rret a
     lemma {w} {A} (invk c t) =
@@ -46,7 +55,7 @@ lemma3-1 {w1} {w2} {c} {m} = lemma (m c)
       in
         ∵ (lift (id w) (invk c t))
                 ≈ id w c >>= (λ x → lift (id w) (t x)) by refl
-                ≈ id w c >>= (λ x → t x)     by {!!} -- can I use induction hypothesis? (lemma (t x))
+                ≈ id w c >>= (λ x → t x)     by lemma0 {f = (λ x → lift (id w) (t x))} {g = λ x → t x}  {p = id w c} refl (λ a0 → lemma (t a0)) -- can I use induction hypothesis? (lemma (t x))
                 ≈ id w c >>= t                 by rinvk t t (λ x → refl)
                 ≈ invk c ret >>= t             by rinvk t t (λ x → refl)
                 ≈ invk c (λ x → ret x >>= t) by rinvk t t (λ x → refl)
@@ -67,8 +76,7 @@ lemma3-2 {w1} {w2} {A} {n} {c} =
   where
     lemma : {w : world} {A : Set} (prog : w ⇒ A) → (prog >>= ret) ≐ prog
     lemma (ret a) = rret a
-    lemma (invk c t) = rinvk {!!} t (λ x → lemma (t x)) -- cannot solve
-    
+    lemma (invk c t) = rinvk (λ x → t x >>= ret) t (λ x → lemma (t x))
 {-
 -- proof by hand. (I think this paper said about as follows)
 
@@ -136,17 +144,17 @@ lemma4 {w1} {w2} {w3} {w4} {f} {g} {h} {c} {A} =
             ∵ ((lift f (invk u v) >>= (λ x → lift (f ⁏ g) (d x)))) 
               ≈ (f u >>= (λ y → lift f (v y))) >>= (λ z → lift (f ⁏ g) (d z)) by refl  -- <- L in the paper
               ≈  f u >>= (λ y → lift f (v y) >>= (λ z → lift (f ⁏ g) (d z)))           -- <- M in the paper
-                by monad-law-of-associativity (f u) (λ y → lift f (v y)) (λ z → lift (f ⁏ g) (d z))
+                by monad-law-of-assoc (f u) (λ y → lift f (v y)) (λ z → lift (f ⁏ g) (d z))
               ≈ f u >>= (λ y → lift f (v y >>= (λ z → lift g (d z)))) by prop {!!}     -- <- R in the paper
                   -- I want to write like 'prop (v y)' but y is not defined in this area.
               ≈ lift f (invk u v >>= (λ x → lift g (d x))) by refl
           where
-            monad-law-of-associativity : {w : world} {A B C : Set}
+            monad-law-of-assoc : {w : world} {A B C : Set}
               → (n : w ⇒ A)
               → (α : A → (w ⇒ B))
               → (β : B → (w ⇒ C))
               → ((n >>= α) >>= β) ≐ (n >>= (λ y → α y >>= β))
-            monad-law-of-associativity = {!!}
+            monad-law-of-assoc = {!!}
 
 -- Theorem 5: There exists a category W m of worlds and world maps.
 -- (Proof: by the Lemma 3 and 4.)
