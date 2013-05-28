@@ -5,6 +5,7 @@
 
 module Proof-World where
 open import World
+import Eq
 
 -- Proposition 1: Program equality is an equivalence relation.
 -- equiv = refl & sym & trans
@@ -16,7 +17,8 @@ sym : {w : world} {A : Set} {wa wb : w ⇒ A} → wa ≐ wb → wb ≐ wa
 sym {w} {A} {ret a} {ret .a} (rret .a) = rret a
 sym {w} {A} {ret a} {invk c t} ()
 sym {w} {A} {invk c s} {ret a} ()
-sym {w} {A} {invk c s} {invk .c t} (rinvk .s .t h) = rinvk t s (λ x → sym {w} {A} {s x} {t x} (h x))
+sym {w} {A} {invk c s} {invk .c t} (rinvk .s .t h)
+  = rinvk t s (λ x → sym {w} {A} {s x} {t x} (h x))
 
 trans : {A : Set} {w : world} {wa wb wc : w ⇒ A} → wa ≐ wb → wb ≐ wc → wa ≐ wc
 trans {A} {w} {ret a} {ret .a} {ret .a} (rret .a) (rret .a) = rret a
@@ -27,26 +29,49 @@ trans {A} {w} {invk _ _} {invk _ _} {ret _} _ ()
 trans {A} {w} {invk c t0} {invk .c t1} {invk .c t2} (rinvk .t0 .t1 h0) (rinvk .t1 .t2 h1)
   = rinvk t0 t2 (λ x → trans {A} {w}  {t0 x} {t1 x} {t2 x} (h0 x) (h1 x))
 
+------------------------------------------------------------------------------------
+-- lemma -- congruence of bind(>>=)
+-- 
+bind-cong : {w : world} {A B : Set} {f g : A → w ⇒ B}
+      → {p q : w ⇒ A} → p ≐ q → ((a0 : A) → f a0 ≐ g a0)
+      → (p >>= f) ≐ (q >>= g)
+bind-cong {w} {A} {B} {f} {g} {ret a} {ret .a} (rret .a) f≐g = f≐g a
+bind-cong {w} {A} {B} {f} {g} {invk c s} {invk .c t} (rinvk {.c} .s .t s≐t) f≐g
+      = rinvk (λ x → s x >>= f) (λ x → t x >>= g)
+              (λ x → bind-cong {w} {A} {B} {f} {g} {s x} {t x} (s≐t x) f≐g)
+bind-cong {w} {A} {B} {f} {g} {ret _} {invk _ _} () _
+bind-cong {w} {A} {B} {f} {g} {invk _ _} {ret _} () _
+------------------------------------------------------------------------------------
+
 -- Theorem 2: (w ⇒) is a monad satisfying the monad laws up to program equality.
+--record monad-laws {w : world} {A B C : Set} (p : w ⇒ A)
+--                  (f : A → (w ⇒ B)) (g : B → (w ⇒ C)) : Set₁ where
+                  
+monad-right-id : {w : world} {A : Set} (p : w ⇒ A) → p >>= ret ≐ p
+monad-right-id (ret a) = rret a
+monad-right-id (invk c t) = rinvk (λ x → t x >>= ret) t (λ x → monad-right-id (t x))
+
+monad-left-id : {w : world} {A B : Set} {f : A → (w ⇒ B)} → (a : A) → ret a >>= f ≐ f a
+monad-left-id = λ a → refl
+
+monad-assoc : {w : world} {A B C : Set} {f : A → (w ⇒ B)} {g : B → (w ⇒ C)}
+  → (p : w ⇒ A) → (p >>= f) >>= g ≐ p >>= (λ x → f x >>= g)
+monad-assoc (ret a) = refl
+monad-assoc {w} {A} {B} {C} {f} {g} (invk c t) =
+  let
+    open Eq {_} {w ⇒ _} _≐_ refl sym trans
+  in
+    ∵ ((invk c t >>= f) >>= g) ≈ {!!} by {!!}
+
 
 
 -- Lemma 3: The identity map id w : w ⊸ w
 
 -- TODO: use another equality. ≗  that is easy to understand.
-import Eq
 
 lemma3-1 : {w1 w2 : world} {c : / w2 /} {m : w1 ⊸ w2} → (id w1 ⁏ m) c ≐ (m c)
 lemma3-1 {w1} {w2} {c} {m} = lemma (m c)
   where
-    -- congruence binding-op のあとに出す
-    lemma0 : {w : world} {A B : Set} {f g : A → w ⇒ B}
-      → {p q : w ⇒ A} → p ≐ q → ((a0 : A) → f a0 ≐ g a0)
-      → (p >>= f) ≐ (q >>= g)
-    lemma0 {w} {A} {B} {f} {g} {ret a} {ret .a} (rret .a) f≐g = f≐g a
-    lemma0 {w} {A} {B} {f} {g} {invk c s} {invk .c t} (rinvk {.c} .s .t s≐t) f≐g = rinvk (λ x → s x >>= f) (λ x → t x >>= g) (λ x → lemma0 {w} {A} {B} {f} {g} {s x} {t x} (s≐t x) f≐g)
-    lemma0 {w} {A} {B} {f} {g} {ret _} {invk _ _} () _
-    lemma0 {w} {A} {B} {f} {g} {invk _ _} {ret _} () _
-  
     lemma : {w : world} {A : Set} (prog : w ⇒ A) → (lift (id w) prog) ≐ prog
     lemma {w} {A} (ret a) = rret a
     lemma {w} {A} (invk c t) =
@@ -55,7 +80,9 @@ lemma3-1 {w1} {w2} {c} {m} = lemma (m c)
       in
         ∵ (lift (id w) (invk c t))
                 ≈ id w c >>= (λ x → lift (id w) (t x)) by refl
-                ≈ id w c >>= (λ x → t x)     by lemma0 {f = (λ x → lift (id w) (t x))} {g = λ x → t x}  {p = id w c} refl (λ a0 → lemma (t a0)) -- can I use induction hypothesis? (lemma (t x))
+                ≈ id w c >>= (λ x → t x)     by bind-cong {f = (λ x → lift (id w) (t x))}
+                                                         {g = λ x → t x}
+                                                         {p = id w c} refl (λ a0 → lemma (t a0))
                 ≈ id w c >>= t                 by rinvk t t (λ x → refl)
                 ≈ invk c ret >>= t             by rinvk t t (λ x → refl)
                 ≈ invk c (λ x → ret x >>= t) by rinvk t t (λ x → refl)
@@ -72,11 +99,7 @@ lemma3-2 {w1} {w2} {A} {n} {c} =
                          ≈ lift n (invk c ret)              by refl
                          ≈ n c >>= (λ x → lift n (ret x)) by refl
                          ≈ n c >>= ret                      by refl
-                         ≈ n c                              by lemma (n c)
-  where
-    lemma : {w : world} {A : Set} (prog : w ⇒ A) → (prog >>= ret) ≐ prog
-    lemma (ret a) = rret a
-    lemma (invk c t) = rinvk (λ x → t x >>= ret) t (λ x → lemma (t x))
+                         ≈ n c                              by monad-right-id (n c)
 {-
 -- proof by hand. (I think this paper said about as follows)
 
@@ -154,7 +177,7 @@ lemma4 {w1} {w2} {w3} {w4} {f} {g} {h} {c} {A} =
               → (α : A → (w ⇒ B))
               → (β : B → (w ⇒ C))
               → ((n >>= α) >>= β) ≐ (n >>= (λ y → α y >>= β))
-            monad-law-of-assoc = {!!}
+            monad-law-of-assoc = {!monad-assoc !}
 
 -- Theorem 5: There exists a category W m of worlds and world maps.
 -- (Proof: by the Lemma 3 and 4.)

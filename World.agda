@@ -5,6 +5,11 @@
 
 module World where
 
+infix  10 _≐_
+infixl 50 _>>=_
+infix  60 ret
+infix  60 invk
+
 --------------------------
 -- I. THE MONAD OF A WORLD
 --------------------------
@@ -34,6 +39,7 @@ data _⇒_ (w : world) (A : Set) : Set where --
 _>>=_ : {A B : Set} {w : world} → (w ⇒ A) → (A → (w ⇒ B)) → (w ⇒ B)
 (ret a) >>= f = f a                           -- : w ⇒ B
 (invk c t) >>= f = invk c (λ x → t x >>= f) -- : w ⇒ B
+
 
 --------------------------------------------
 -- II. THE CATEGORY OF WORLDS AND WORLD MAPS
