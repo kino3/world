@@ -31,7 +31,7 @@ trans {A} {w} {invk c t0} {invk .c t1} {invk .c t2} (rinvk .t0 .t1 h0) (rinvk .t
 
 ------------------------------------------------------------------------------------
 -- lemma -- congruence of bind(>>=)
--- 
+
 bind-cong : {w : world} {A B : Set} {f g : A → w ⇒ B}
       → {p q : w ⇒ A} → p ≐ q → ((a0 : A) → f a0 ≐ g a0)
       → (p >>= f) ≐ (q >>= g)
@@ -44,30 +44,30 @@ bind-cong {w} {A} {B} {f} {g} {invk _ _} {ret _} () _
 ------------------------------------------------------------------------------------
 
 -- Theorem 2: (w ⇒) is a monad satisfying the monad laws up to program equality.
---record monad-laws {w : world} {A B C : Set} (p : w ⇒ A)
---                  (f : A → (w ⇒ B)) (g : B → (w ⇒ C)) : Set₁ where
-                  
+
+-- ηA* = idTA
 monad-right-id : {w : world} {A : Set} (p : w ⇒ A) → p >>= ret ≐ p
 monad-right-id (ret a) = rret a
 monad-right-id (invk c t) = rinvk (λ x → t x >>= ret) t (λ x → monad-right-id (t x))
 
+-- ηA;f* = f
 monad-left-id : {w : world} {A B : Set} {f : A → (w ⇒ B)} → (a : A) → ret a >>= f ≐ f a
 monad-left-id = λ a → refl
 
-monad-assoc : {w : world} {A B C : Set} {f : A → (w ⇒ B)} {g : B → (w ⇒ C)}
-  → (p : w ⇒ A) → (p >>= f) >>= g ≐ p >>= (λ x → f x >>= g)
-monad-assoc (ret a) = refl
-monad-assoc {w} {A} {B} {C} {f} {g} (invk c t) =
-  let
-    open Eq {_} {w ⇒ _} _≐_ refl sym trans
-  in
-    ∵ ((invk c t >>= f) >>= g) ≈ {!!} by {!!}
-
-
+-- (f* ; g*) = (f ; g*)*
+monad-assoc : {w : world} {A B C : Set}
+  → (f : A → (w ⇒ B)) → (g : B → (w ⇒ C)) → (p : w ⇒ A)
+  → (p >>= f) >>= g ≐ p >>= (λ x → f x >>= g)
+monad-assoc f g (ret a) = refl
+monad-assoc {w} {A} {B} {C} f g (invk c t)
+  = rinvk (λ x → t x >>= f >>= g)
+          (λ x → t x >>= (λ y → f y >>= g))
+          (λ x → monad-assoc f g (t x))
+  -- I wonder why this proof is ok... in the paper does Granstrom use 'bind-cong'?
 
 -- Lemma 3: The identity map id w : w ⊸ w
 
--- TODO: use another equality. ≗  that is easy to understand.
+-- TODO: use another equality.  ≗ is easy to understand.
 
 lemma3-1 : {w1 w2 : world} {c : / w2 /} {m : w1 ⊸ w2} → (id w1 ⁏ m) c ≐ (m c)
 lemma3-1 {w1} {w2} {c} {m} = lemma (m c)
@@ -100,23 +100,6 @@ lemma3-2 {w1} {w2} {A} {n} {c} =
                          ≈ n c >>= (λ x → lift n (ret x)) by refl
                          ≈ n c >>= ret                      by refl
                          ≈ n c                              by monad-right-id (n c)
-{-
--- proof by hand. (I think this paper said about as follows)
-
-lift (id w1) (ret a) = ret a
-lift (id w1) (invk c t) = (id w1) c >>= (λ x → lift (id w1) (t x))
-                        = (id w1) c >>= t
-                        = invk c ret >>= t
-                        = invk c (λ x → ret x >>= t)
-                        = invk c (λ x → t x)
-                        = invk c t
-
-(n ; (id w2)) c = lift n ((id w2) c)
-                = lift n (invk c ret)
-                = n c >>= (λ x → lift n (ret x))
-                = n c >>= ret
-                = n c
--}
 
 -- Lemma 4: Composition of world maps is associative.
 lemma4 : {w1 w2 w3 w4 : world} {f : w1 ⊸ w2} {g : w2 ⊸ w3} {h : w3 ⊸ w4} {c : / w4 /} {A : Set}
@@ -165,23 +148,19 @@ lemma4 {w1} {w2} {w3} {w4} {f} {g} {h} {c} {A} =
             open Eq {_} {w1 ⇒ _} _≐_ refl sym trans
           in
             ∵ ((lift f (invk u v) >>= (λ x → lift (f ⁏ g) (d x)))) 
-              ≈ (f u >>= (λ y → lift f (v y))) >>= (λ z → lift (f ⁏ g) (d z)) by refl  -- <- L in the paper
-              ≈  f u >>= (λ y → lift f (v y) >>= (λ z → lift (f ⁏ g) (d z)))           -- <- M in the paper
-                by monad-law-of-assoc (f u) (λ y → lift f (v y)) (λ z → lift (f ⁏ g) (d z))
-              ≈ f u >>= (λ y → lift f (v y >>= (λ z → lift g (d z)))) by prop {!!}     -- <- R in the paper
+              ≈ (f u >>= (λ y → lift f (v y))) >>= (λ z → lift (f ⁏ g) (d z)) by refl
+                   -- <- L in the paper
+              ≈  f u >>= (λ y → lift f (v y) >>= (λ z → lift (f ⁏ g) (d z)))
+                   -- <- M in the paper
+                by monad-assoc (λ y → lift f (v y)) (λ z → lift (f ⁏ g) (d z)) (f u)
+              ≈ f u >>= (λ y → lift f (v y >>= (λ z → lift g (d z))))
+                by {!!}
+                  -- <- R in the paper
                   -- I want to write like 'prop (v y)' but y is not defined in this area.
               ≈ lift f (invk u v >>= (λ x → lift g (d x))) by refl
-          where
-            monad-law-of-assoc : {w : world} {A B C : Set}
-              → (n : w ⇒ A)
-              → (α : A → (w ⇒ B))
-              → (β : B → (w ⇒ C))
-              → ((n >>= α) >>= β) ≐ (n >>= (λ y → α y >>= β))
-            monad-law-of-assoc = {!monad-assoc !}
 
 -- Theorem 5: There exists a category W m of worlds and world maps.
 -- (Proof: by the Lemma 3 and 4.)
-
 
 ----------------------------------------------------
 
