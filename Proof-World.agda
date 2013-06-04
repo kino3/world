@@ -63,7 +63,6 @@ monad-assoc {w} {A} {B} {C} f g (invk c t)
   = rinvk (λ x → t x >>= f >>= g)
           (λ x → t x >>= (λ y → f y >>= g))
           (λ x → monad-assoc f g (t x))
-  -- I wonder why this proof is ok... in the paper does Granstrom use 'bind-cong'?
 
 -- Lemma 3: The identity map id w : w ⊸ w
 
@@ -147,16 +146,16 @@ lemma4 {w1} {w2} {w3} {w4} {f} {g} {h} {c} {A} =
           let
             open Eq {_} {w1 ⇒ _} _≐_ refl sym trans
           in
-            ∵ ((lift f (invk u v) >>= (λ x → lift (f ⁏ g) (d x)))) 
+            ∵ (lift f (invk u v) >>= (λ x → lift (f ⁏ g) (d x))) 
               ≈ (f u >>= (λ y → lift f (v y))) >>= (λ z → lift (f ⁏ g) (d z)) by refl
                    -- <- L in the paper
               ≈  f u >>= (λ y → lift f (v y) >>= (λ z → lift (f ⁏ g) (d z)))
                    -- <- M in the paper
                 by monad-assoc (λ y → lift f (v y)) (λ z → lift (f ⁏ g) (d z)) (f u)
               ≈ f u >>= (λ y → lift f (v y >>= (λ z → lift g (d z))))
-                by {!!}
-                  -- <- R in the paper
-                  -- I want to write like 'prop (v y)' but y is not defined in this area.
+                by bind-cong {p = f u} {q = f u} refl (λ a0 → prop (v a0))
+                   -- <- R in the paper
+                   -- NOTE: We must write "{p = f u} {q = f u}"
               ≈ lift f (invk u v >>= (λ x → lift g (d x))) by refl
 
 -- Theorem 5: There exists a category W m of worlds and world maps.
