@@ -83,3 +83,10 @@ data _≐_ {w : world} {A : Set} : (w ⇒ A) → (w ⇒ A) → Set where
 _≗_ : {w1 w2 : world} → (w1 ⊸ w2) → (w1 ⊸ w2) → Set
 _≗_ {_} {w2} m n = (x : / w2 /) → m x ≐ n x
 
+
+--- families of worlds
+record FW (A : Set) : Set₁ where
+  field
+    C' : A → Set
+    R' : (a : A) → C' a → Set
+    
