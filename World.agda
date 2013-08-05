@@ -85,8 +85,9 @@ _≗_ {_} {w2} m n = (x : / w2 /) → m x ≐ n x
 
 
 --- families of worlds
-record FW (A : Set) : Set₁ where
+record Ω (A : Set) : Set₁ where
+  constructor _,_
   field
-    C' : A → Set
-    R' : (a : A) → C' a → Set
-    
+    CΩ : A → Set
+    RΩ : (x : A) → CΩ x → Set
+

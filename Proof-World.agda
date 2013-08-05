@@ -64,6 +64,14 @@ monad-assoc {w} {A} {B} {C} f g (invk c t)
           (λ x → t x >>= (λ y → f y >>= g))
           (λ x → monad-assoc f g (t x))
 
+{-
+record monad (C : Category) : Set₁ where
+  field
+    T : C ⟶ C
+    η : Id ⟹ T
+    μ : T
+-}
+          
 -- Lemma 3: The identity map id w : w ⊸ w
 
 -- TODO: use another equality.  ≗ is easy to understand.
@@ -160,6 +168,11 @@ lemma4 {w1} {w2} {w3} {w4} {f} {g} {h} {c} {A} =
 
 -- Theorem 5: There exists a category W m of worlds and world maps.
 -- (Proof: by the Lemma 3 and 4.)
+{-
+open import Category
+w-cat : Cat  
+w-cat = ?
+-}
 
 ----------------------------------------------------
 
