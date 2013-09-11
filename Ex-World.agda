@@ -35,10 +35,44 @@ pw x = invk (write "enter password:") (λ _ → invk read (λ y → ret (x == y)
 ----------------------------------------------------
 -- Example -- III. Programming with world maps
 ----------------------------------------------------
+data cio2 : Set where
+  scan : cio2
+  print : String → cio2
+
+rio2 : cio2 → Set
+rio2 scan = String
+rio2 (print _) = ⊤               -- ⊤ is in Data.Unit
+
+io2 : world
+io2 = cio2 , rio2
+
+-- example of world-map
+iomap : io ⊸ io2
+iomap scan = invk read ret
+iomap (print x) = invk (write x) ret
+
+-- terminal-world?
+data term-com : Set where
+  hoge : term-com
+
+term-res : term-com → Set
+term-res hoge = ⊤
+
+term-world : world
+term-world = term-com , term-res
+
+term-wmap : io ⊸ term-world
+term-wmap hoge = ret tt
+
+-- lifting sample?
+test : io ⇒ String
+test = lift iomap (invk scan ret)
 
 ----------------------------------------------------
 -- Event-driven programs
 ----------------------------------------------------
+
+
 
 ----------------------------------------------------
 -- Session state
