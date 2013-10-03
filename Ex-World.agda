@@ -68,6 +68,15 @@ term-wmap hoge = ret tt
 test : io ⇒ String
 test = lift iomap (invk scan ret)
 
+-- password test
+testmap : term-world ⊸ io
+testmap read = ret "hello"
+testmap (write _) = ret tt
+
+lifttest : term-world ⇒ Bool
+lifttest = lift testmap (pw "hogehoge")
+
+
 ----------------------------------------------------
 -- Event-driven programs
 ----------------------------------------------------
